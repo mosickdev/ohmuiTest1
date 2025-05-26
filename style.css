@@ -12,6 +12,52 @@ body {
     overflow-x: hidden;
 }
 
+/* 메시지 컨테이너 (보라색 배경 위) */
+.message-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    width: 90%;
+    max-width: 500px;
+    pointer-events: none;
+}
+
+.message-container .message {
+    pointer-events: auto;
+    margin-bottom: 10px;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    animation: slideInFromTop 0.4s ease-out;
+}
+
+.message-container .success-message {
+    background: rgba(40, 167, 69, 0.95);
+    color: white;
+    border: 2px solid rgba(40, 167, 69, 0.5);
+}
+
+.message-container .error-message {
+    background: rgba(220, 53, 69, 0.95);
+    color: white;
+    border: 2px solid rgba(220, 53, 69, 0.5);
+}
+
+@keyframes slideInFromTop {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .app-container {
     display: flex;
     min-height: 100vh;
@@ -115,6 +161,18 @@ body {
     border-radius: 6px;
     object-fit: contain;
     flex-shrink: 0;
+    /* 로고 이미지가 없을 때 기본 배경 제거 */
+    background: transparent;
+}
+
+/* 로고 이미지 로드 실패 시 대체 아이콘 표시 */
+.logo-image::after {
+    content: '';
+    display: none;
+}
+
+.logo-image[src*="ohmui-logo.png"]:not([src=""]) {
+    background: transparent;
 }
 
 .logo-text {
@@ -132,10 +190,18 @@ body {
     padding: 0 1rem;
     margin-bottom: 1rem;
     position: relative;
+    /* 사이드바 축소 시 가로줄 아래로 위치 조정 */
+    margin-top: 0.5rem;
 }
 
 .sidebar.collapsed .user-account-section {
     padding: 0 0.5rem;
+    margin-top: 1rem; /* 가로줄과 더 명확하게 분리 */
+}
+
+/* 로그인 섹션과 사용자 프로필 섹션 간격 통일 */
+.login-section, .user-profile {
+    margin-bottom: 0;
 }
 
 .user-profile {
@@ -150,9 +216,14 @@ body {
     overflow: hidden;
 }
 
+/* 사이드바 축소 시 사용자 프로필 스타일 개선 */
 .sidebar.collapsed .user-profile {
-    justify-content: center;
+    justify-content: left;
     padding: 0.8rem 0.5rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    margin: 0 auto;
 }
 
 .user-profile:hover {
@@ -168,6 +239,11 @@ body {
 .user-avatar i {
     font-size: 2rem;
     color: #667eea;
+}
+
+/* 사이드바 축소 시 아이콘 크기 조정 */
+.sidebar.collapsed .user-avatar i {
+    font-size: 1.2rem;
 }
 
 .user-info {
@@ -221,7 +297,53 @@ body {
     transform: rotate(180deg);
 }
 
-/* 드롭다운 메뉴 */
+/* 로그인 버튼 스타일 */
+.login-button {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* 사이드바 축소 시 로그인 버튼 스타일 변경 */
+.sidebar.collapsed .login-button {
+    width: 40px;
+    height: 40px;
+    padding: 0.5rem;
+    border-radius: 8px;
+    min-width: 40px;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.login-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.login-text {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    white-space: nowrap;
+}
+
+.sidebar.collapsed .login-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+/* 드롭다운 메뉴 - 기존 방식으로 복원 */
 .user-dropdown {
     position: absolute;
     top: 100%;
@@ -238,12 +360,7 @@ body {
     transition: all 0.3s ease;
 }
 
-.sidebar.collapsed .user-dropdown {
-    left: 5px;
-    right: auto;
-    width: 250px;
-}
-
+/* 드롭다운 표시 시 */
 .user-dropdown.show {
     opacity: 1;
     visibility: visible;
@@ -311,6 +428,15 @@ body {
 .nav-item {
     margin: 0.3rem 0;
     position: relative;
+}
+
+/* 로그인 전용 메뉴 아이템 숨김 */
+.nav-item.login-required {
+    display: none;
+}
+
+.logged-in .nav-item.login-required {
+    display: block;
 }
 
 /* 툴팁 (사이드바 축소 시) */
@@ -463,6 +589,15 @@ body {
     background: linear-gradient(135deg, #f8f9ff, #e8eaff);
     border-radius: 15px;
     border: 2px solid #e8eaff;
+}
+
+/* 로그인 전용 프리셋 섹션 숨김 */
+.preset-section.login-required {
+    display: none;
+}
+
+.logged-in .preset-section.login-required {
+    display: block;
 }
 
 .preset-selector {
@@ -796,88 +931,32 @@ body {
     border-top: 2px solid #f0f0f0;
 }
 
-/* 로딩 스피너 스타일 */
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-}
-
-.loading-content {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 2rem;
-    border-radius: 15px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+/* 로그인 알림 메시지 */
+.login-notice {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    border: 2px solid #ffeaa7;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
     text-align: center;
-    backdrop-filter: blur(10px);
+    color: #856404;
 }
 
-.loading-spinner {
-    font-size: 2rem;
-    color: #667eea;
+.login-notice h3 {
+    margin-bottom: 0.5rem;
+    color: #856404;
+}
+
+.login-notice p {
     margin-bottom: 1rem;
-    animation: spin 1s linear infinite;
+    color: #856404;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.loading-text {
-    color: #555;
-    font-size: 1rem;
-    margin: 0;
-}
-
-/* 에러 메시지 스타일 */
-.error-message {
-    background: #ffe6e6;
-    border: 2px solid #ff9999;
-    border-radius: 8px;
-    padding: 1rem;
-    margin: 1rem 0;
-    color: #cc0000;
-    display: none;
-}
-
-.error-message.show {
-    display: block;
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* 성공 메시지 스타일 */
-.success-message {
-    background: #e6ffe6;
-    border: 2px solid #99cc99;
-    border-radius: 8px;
-    padding: 1rem;
-    margin: 1rem 0;
-    color: #006600;
-    display: none;
-}
-
-.success-message.show {
-    display: block;
-    animation: slideIn 0.3s ease-out;
+.login-notice .btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 0.6rem 1.5rem;
+    font-size: 0.9rem;
 }
 
 /* 반응형 디자인 */
