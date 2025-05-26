@@ -1,5 +1,5 @@
 // 전역 변수
-let isLoggedIn = false;
+let isLoggedIn = false; // 초기 상태를 false로 설정
 let isSidebarCollapsed = false;
 let isMobile = window.innerWidth <= 768;
 let currentPage = 'prompt-generator';
@@ -19,24 +19,70 @@ function updateUIForLoginState() {
     
     if (isLoggedIn) {
         body.classList.add('logged-in');
-        loginSection.style.display = 'none';
-        userProfile.style.display = 'flex';
+        if (loginSection) loginSection.style.display = 'none';
+        if (userProfile) userProfile.style.display = 'flex';
         if (loginNotice) loginNotice.style.display = 'none';
     } else {
         body.classList.remove('logged-in');
-        loginSection.style.display = 'block';
-        userProfile.style.display = 'none';
+        if (loginSection) loginSection.style.display = 'block';
+        if (userProfile) userProfile.style.display = 'none';
         if (loginNotice) loginNotice.style.display = 'block';
+    }
+}
+
+// 로그인 모달 표시
+function showLoginModal() {
+    const modal = document.getElementById('loginModal');
+    const loginId = document.getElementById('loginId');
+    const loginPassword = document.getElementById('loginPassword');
+    
+    if (modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+        
+        // 입력 필드 초기화 및 포커스
+        if (loginId) loginId.value = '';
+        if (loginPassword) loginPassword.value = '';
+        if (loginId) loginId.focus();
+    }
+}
+
+// 로그인 모달 숨기기
+function hideLoginModal() {
+    const modal = document.getElementById('loginModal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.style.display = 'none', 300);
     }
 }
 
 // 로그인 처리 함수
 function handleLogin() {
-    showMessage('로그인을 시뮬레이션합니다...', 'success');
-    setTimeout(() => {
+    const loginIdInput = document.getElementById('loginId');
+    const loginPasswordInput = document.getElementById('loginPassword');
+    
+    if (!loginIdInput || !loginPasswordInput) {
+        showMessage('로그인 폼을 찾을 수 없습니다.', 'error');
+        return;
+    }
+    
+    const loginId = loginIdInput.value.trim();
+    const loginPassword = loginPasswordInput.value.trim();
+    
+    // 유효성 검사
+    if (!loginId || !loginPassword) {
+        showMessage('아이디와 비밀번호를 입력해주세요.', 'error');
+        return;
+    }
+    
+    // 로그인 검증 (admin / 1234)
+    if (loginId === 'admin' && loginPassword === '1234') {
+        hideLoginModal();
         toggleLoginState();
-        showMessage('로그인되었습니다!', 'success');
-    }, 1000);
+        showMessage('로그인에 성공했습니다!', 'success');
+    } else {
+        showMessage('아이디 또는 비밀번호가 올바르지 않습니다.', 'error');
+    }
 }
 
 // 로그아웃 처리 함수
@@ -213,7 +259,7 @@ function applyPreset(presetId) {
     showMessage('프리셋이 적용되었습니다.', 'success');
 }
 
-// 메시지 표시 함수 (보라색 배경 위에 표시)
+// 메시지 표시 함수
 function showMessage(message, type = 'info') {
     const messageContainer = document.getElementById('messageContainer');
     
@@ -229,7 +275,7 @@ function showMessage(message, type = 'info') {
     }, 3000);
 }
 
-// 사용자 드롭다운 토글 (사이드바 확장 시) 또는 계정 페이지 이동 (축소 시)
+// 사용자 드롭다운 토글
 function handleUserProfileClick() {
     const sidebar = document.getElementById('sidebar');
     const isCollapsed = sidebar.classList.contains('collapsed');
@@ -237,15 +283,13 @@ function handleUserProfileClick() {
     if (isCollapsed) {
         // 사이드바가 축소된 상태: 계정 페이지로 이동
         showMessage('계정 페이지로 이동합니다.', 'success');
-        // 실제 구현 시: window.location.href = '/account';
-        // 또는 switchPage('account');
     } else {
         // 사이드바가 확장된 상태: 드롭다운 토글
         toggleUserDropdown();
     }
 }
 
-// 기존 드롭다운 토글 함수 (확장 시에만 사용)
+// 드롭다운 토글 함수
 function toggleUserDropdown() {
     const userProfile = document.getElementById('userProfile');
     const userDropdown = document.getElementById('userDropdown');
@@ -288,7 +332,7 @@ function hidePresetModal() {
     }
 }
 
-// 임시 프리셋 저장 함수 (백엔드 연결 전까지 사용)
+// 임시 프리셋 저장 함수
 function savePresetTemporary(name, description) {
     // 현재 설정 수집
     const settings = {};
@@ -365,10 +409,8 @@ function handleSelectChange(selectElement) {
     
     if (checkbox) {
         if (selectElement.value === '') {
-            // "선택하세요"를 선택한 경우 체크 해제
             checkbox.checked = false;
         } else {
-            // 값을 선택한 경우 체크
             checkbox.checked = true;
         }
     }
@@ -376,35 +418,74 @@ function handleSelectChange(selectElement) {
 
 // 초기화 및 이벤트 리스너 설정
 document.addEventListener('DOMContentLoaded', function() {
-    // 초기 UI 상태 설정
+    // 초기 UI 상태 설정 (비로그인 상태)
     updateUIForLoginState();
     
     // 저장된 임시 프리셋들 로드
     loadTemporaryPresets();
     
     // 사이드바 토글 버튼
-    document.getElementById('sidebarToggle').addEventListener('click', function(e) {
-        e.stopPropagation();
-        toggleSidebar();
-    });
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleSidebar();
+        });
+    }
     
     // 로그인 버튼
-    document.getElementById('loginButton').addEventListener('click', handleLogin);
+    const loginButton = document.getElementById('loginButton');
+    if (loginButton) {
+        loginButton.addEventListener('click', showLoginModal);
+    }
+    
+    // 로그인 모달 관련 이벤트
+    const loginModalClose = document.getElementById('loginModalClose');
+    const loginModalCancel = document.getElementById('loginModalCancel');
+    const loginModalSubmit = document.getElementById('loginModalSubmit');
+    const loginForm = document.getElementById('loginForm');
+    const loginModal = document.getElementById('loginModal');
+    
+    if (loginModalClose) loginModalClose.addEventListener('click', hideLoginModal);
+    if (loginModalCancel) loginModalCancel.addEventListener('click', hideLoginModal);
+    if (loginModalSubmit) loginModalSubmit.addEventListener('click', handleLogin);
+    
+    // 로그인 폼 엔터키 처리
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleLogin();
+        });
+    }
+    
+    // 로그인 모달 외부 클릭 시 닫기
+    if (loginModal) {
+        loginModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideLoginModal();
+            }
+        });
+    }
     
     // 사용자 프로필 클릭 (로그인 후)
-    document.getElementById('userProfile').addEventListener('click', function(e) {
-        e.stopPropagation();
-        // 로그인 상태일 때만 처리
-        if (isLoggedIn) {
-            handleUserProfileClick();
-        }
-    });
+    const userProfile = document.getElementById('userProfile');
+    if (userProfile) {
+        userProfile.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (isLoggedIn) {
+                handleUserProfileClick();
+            }
+        });
+    }
     
     // 로그아웃 버튼
-    document.getElementById('logout').addEventListener('click', function(e) {
-        e.preventDefault();
-        handleLogout();
-    });
+    const logout = document.getElementById('logout');
+    if (logout) {
+        logout.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleLogout();
+        });
+    }
     
     // 네비게이션 링크들
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -423,15 +504,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // 프리셋 선택 이벤트
-    document.getElementById('presetSelect').addEventListener('change', function() {
-        const presetId = this.value;
-        if (presetId && isLoggedIn) {
-            applyPreset(presetId);
-        }
-    });
+    const presetSelect = document.getElementById('presetSelect');
+    if (presetSelect) {
+        presetSelect.addEventListener('change', function() {
+            const presetId = this.value;
+            if (presetId && isLoggedIn) {
+                applyPreset(presetId);
+            }
+        });
+    }
     
     // 프리셋 저장 버튼
-    document.getElementById('savePresetBtn').addEventListener('click', showPresetModal);
+    const savePresetBtn = document.getElementById('savePresetBtn');
+    if (savePresetBtn) {
+        savePresetBtn.addEventListener('click', showPresetModal);
+    }
     
     // 모든 셀렉트 박스에 자동 체크박스 설정 이벤트 추가
     document.querySelectorAll('select[data-category]').forEach(select => {
@@ -441,128 +528,169 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // 프롬프트 생성 버튼
-    document.getElementById('generateBtn').addEventListener('click', function() {
-        try {
-            this.disabled = true;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...';
-            
-            const prompt = generatePrompt();
-            const promptTextarea = document.getElementById('promptPreview');
-            promptTextarea.value = prompt;
-            
-            this.innerHTML = '<i class="fas fa-check"></i> 생성 완료!';
-            showMessage('프롬프트가 성공적으로 생성되었습니다.', 'success');
-            
-            setTimeout(() => {
-                this.innerHTML = '<i class="fas fa-magic"></i> 프롬프트 생성';
-            }, 2000);
-            
-        } catch (error) {
-            console.error('프롬프트 생성 실패:', error);
-            showMessage('프롬프트 생성에 실패했습니다.', 'error');
-            this.innerHTML = '<i class="fas fa-magic"></i> 프롬프트 생성';
-        } finally {
-            this.disabled = false;
-        }
-    });
-    
-    // 프롬프트 복사 버튼
-    document.getElementById('copyBtn').addEventListener('click', async function() {
-        const promptText = document.getElementById('promptPreview').value;
-        
-        if (promptText && promptText.trim()) {
+    const generateBtn = document.getElementById('generateBtn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', function() {
             try {
-                await navigator.clipboard.writeText(promptText);
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...';
                 
-                const originalText = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-check"></i> 복사됨!';
-                this.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                const prompt = generatePrompt();
+                const promptTextarea = document.getElementById('promptPreview');
+                if (promptTextarea) {
+                    promptTextarea.value = prompt;
+                }
                 
-                showMessage('프롬프트가 클립보드에 복사되었습니다.', 'success');
+                this.innerHTML = '<i class="fas fa-check"></i> 생성 완료!';
+                showMessage('프롬프트가 성공적으로 생성되었습니다.', 'success');
                 
                 setTimeout(() => {
-                    this.innerHTML = originalText;
-                    this.style.background = '';
+                    this.innerHTML = '<i class="fas fa-magic"></i> 프롬프트 생성';
                 }, 2000);
-            } catch (err) {
-                console.error('클립보드 복사 실패:', err);
-                showMessage('클립보드 복사에 실패했습니다.', 'error');
+                
+            } catch (error) {
+                console.error('프롬프트 생성 실패:', error);
+                showMessage('프롬프트 생성에 실패했습니다.', 'error');
+                this.innerHTML = '<i class="fas fa-magic"></i> 프롬프트 생성';
+            } finally {
+                this.disabled = false;
             }
-        } else {
-            showMessage('복사할 프롬프트가 없습니다.', 'error');
-        }
-    });
+        });
+    }
+    
+    // 프롬프트 복사 버튼
+    const copyBtn = document.getElementById('copyBtn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', async function() {
+            const promptTextarea = document.getElementById('promptPreview');
+            const promptText = promptTextarea ? promptTextarea.value : '';
+            
+            if (promptText && promptText.trim()) {
+                try {
+                    await navigator.clipboard.writeText(promptText);
+                    
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-check"></i> 복사됨!';
+                    this.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                    
+                    showMessage('프롬프트가 클립보드에 복사되었습니다.', 'success');
+                    
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.style.background = '';
+                    }, 2000);
+                } catch (err) {
+                    console.error('클립보드 복사 실패:', err);
+                    showMessage('클립보드 복사에 실패했습니다.', 'error');
+                }
+            } else {
+                showMessage('복사할 프롬프트가 없습니다.', 'error');
+            }
+        });
+    }
     
     // 초기화 버튼
-    document.getElementById('resetBtn').addEventListener('click', function() {
-        if (confirm('모든 설정을 초기화하시겠습니까?')) {
-            document.querySelectorAll('select').forEach(select => {
-                if (select.id !== 'presetSelect') {
-                    select.value = '';
-                }
-            });
-            
-            document.getElementById('presetSelect').value = '';
-            
-            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            
-            document.getElementById('promptPreview').value = '';
-            showMessage('모든 설정이 초기화되었습니다.', 'success');
-        }
-    });
+    const resetBtn = document.getElementById('resetBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            if (confirm('모든 설정을 초기화하시겠습니까?')) {
+                document.querySelectorAll('select').forEach(select => {
+                    if (select.id !== 'presetSelect') {
+                        select.value = '';
+                    }
+                });
+                
+                const presetSelect = document.getElementById('presetSelect');
+                if (presetSelect) presetSelect.value = '';
+                
+                document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                const promptPreview = document.getElementById('promptPreview');
+                if (promptPreview) promptPreview.value = '';
+                
+                showMessage('모든 설정이 초기화되었습니다.', 'success');
+            }
+        });
+    }
     
-    // 모달 관련 이벤트
-    document.getElementById('modalClose').addEventListener('click', hidePresetModal);
-    document.getElementById('modalCancel').addEventListener('click', hidePresetModal);
+    // 프리셋 저장 모달 관련 이벤트
+    const modalClose = document.getElementById('modalClose');
+    const modalCancel = document.getElementById('modalCancel');
+    const modalSave = document.getElementById('modalSave');
+    const presetModal = document.getElementById('presetModal');
     
-    // 프리셋 저장 모달의 저장 버튼
-    document.getElementById('modalSave').addEventListener('click', function() {
-        const name = document.getElementById('presetName').value.trim();
-        const description = document.getElementById('presetDescription').value.trim();
-        
-        if (!name) {
-            showMessage('프리셋 이름을 입력해주세요.', 'error');
-            return;
-        }
-        
-        // 임시 프리셋 저장 함수 호출
-        savePresetTemporary(name, description);
-        hidePresetModal();
-    });
+    if (modalClose) modalClose.addEventListener('click', hidePresetModal);
+    if (modalCancel) modalCancel.addEventListener('click', hidePresetModal);
     
-    document.getElementById('presetModal').addEventListener('click', function(e) {
-        if (e.target === this) {
+    if (modalSave) {
+        modalSave.addEventListener('click', function() {
+            const presetNameInput = document.getElementById('presetName');
+            const presetDescriptionInput = document.getElementById('presetDescription');
+            
+            const name = presetNameInput ? presetNameInput.value.trim() : '';
+            const description = presetDescriptionInput ? presetDescriptionInput.value.trim() : '';
+            
+            if (!name) {
+                showMessage('프리셋 이름을 입력해주세요.', 'error');
+                return;
+            }
+            
+            savePresetTemporary(name, description);
             hidePresetModal();
-        }
-    });
+        });
+    }
+    
+    if (presetModal) {
+        presetModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hidePresetModal();
+            }
+        });
+    }
     
     // 드롭다운 메뉴 항목들
-    document.getElementById('accountSettings').addEventListener('click', function(e) {
-        e.preventDefault();
-        showMessage('계정 설정 페이지로 이동합니다.', 'success');
-    });
+    const accountSettings = document.getElementById('accountSettings');
+    const myProjects = document.getElementById('myProjects');
+    const usageHistory = document.getElementById('usageHistory');
+    const subscription = document.getElementById('subscription');
+    const helpSupport = document.getElementById('helpSupport');
     
-    document.getElementById('myProjects').addEventListener('click', function(e) {
-        e.preventDefault();
-        showMessage('내 프로젝트 페이지로 이동합니다.', 'success');
-    });
+    if (accountSettings) {
+        accountSettings.addEventListener('click', function(e) {
+            e.preventDefault();
+            showMessage('계정 설정 페이지로 이동합니다.', 'success');
+        });
+    }
     
-    document.getElementById('usageHistory').addEventListener('click', function(e) {
-        e.preventDefault();
-        showMessage('사용 내역 페이지로 이동합니다.', 'success');
-    });
+    if (myProjects) {
+        myProjects.addEventListener('click', function(e) {
+            e.preventDefault();
+            showMessage('내 프로젝트 페이지로 이동합니다.', 'success');
+        });
+    }
     
-    document.getElementById('subscription').addEventListener('click', function(e) {
-        e.preventDefault();
-        showMessage('구독 관리 페이지로 이동합니다.', 'success');
-    });
+    if (usageHistory) {
+        usageHistory.addEventListener('click', function(e) {
+            e.preventDefault();
+            showMessage('사용 내역 페이지로 이동합니다.', 'success');
+        });
+    }
     
-    document.getElementById('helpSupport').addEventListener('click', function(e) {
-        e.preventDefault();
-        showMessage('도움말 페이지로 이동합니다.', 'success');
-    });
+    if (subscription) {
+        subscription.addEventListener('click', function(e) {
+            e.preventDefault();
+            showMessage('구독 관리 페이지로 이동합니다.', 'success');
+        });
+    }
+    
+    if (helpSupport) {
+        helpSupport.addEventListener('click', function(e) {
+            e.preventDefault();
+            showMessage('도움말 페이지로 이동합니다.', 'success');
+        });
+    }
     
     // 외부 클릭 시 드롭다운 닫기
     document.addEventListener('click', function(event) {
@@ -570,10 +698,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const userProfile = document.getElementById('userProfile');
         const userDropdown = document.getElementById('userDropdown');
         
-        // 사용자 계정 섹션 외부를 클릭했거나, 드롭다운 메뉴 외부를 클릭한 경우
-        if (!userAccountSection.contains(event.target) && !userDropdown.contains(event.target)) {
-            userProfile.classList.remove('active');
-            userDropdown.classList.remove('show');
+        if (userAccountSection && userProfile && userDropdown) {
+            if (!userAccountSection.contains(event.target) && !userDropdown.contains(event.target)) {
+                userProfile.classList.remove('active');
+                userDropdown.classList.remove('show');
+            }
         }
     });
     
@@ -584,12 +713,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 closeMobileSidebar();
             }
             hidePresetModal();
+            hideLoginModal();
             
             // 드롭다운 닫기
             const userProfile = document.getElementById('userProfile');
             const userDropdown = document.getElementById('userDropdown');
-            userProfile.classList.remove('active');
-            userDropdown.classList.remove('show');
+            if (userProfile && userDropdown) {
+                userProfile.classList.remove('active');
+                userDropdown.classList.remove('show');
+            }
         }
     });
     
