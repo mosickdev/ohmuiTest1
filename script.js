@@ -165,71 +165,261 @@ function switchPage(pageId) {
     }
 }
 
-// 프롬프트 생성 함수
+// 프롬프트 생성 함수 (나이 항목 추가 버전)
 function generatePrompt() {
-    let promptParts = [];
+    // 데이터 수집
+    const data = {};
     
-    document.querySelectorAll('.form-group').forEach(group => {
-        const select = group.querySelector('select');
-        const checkbox = group.querySelector('input[type="checkbox"]');
+    // 각 카테고리별로 체크된 값 수집
+    const categories = {
+        'nationality': 'nationality',
+        'gender': 'gender',
+        'age': 'age',  // 나이 추가
+        'hairstyle': 'hairStyle',
+        'outfit': 'outfit',
+        'action': 'action',
+        'pose': 'pose',
+        'expression': 'expression',
+        'background': 'background',
+        'camera': 'cameraAngle',
+        'distance': 'cameraDistance',
+        'lighting': 'lighting'
+    };
+    
+    // 체크박스가 체크되어 있고 값이 선택된 경우만 수집
+    Object.entries(categories).forEach(([htmlCategory, dataKey]) => {
+        const select = document.querySelector(`select[data-category="${htmlCategory}"]`);
+        const checkbox = document.querySelector(`#use-${htmlCategory}`);
         
         if (select && checkbox && checkbox.checked && select.value) {
-            promptParts.push(select.value);
+            data[dataKey] = select.value;
         }
     });
     
-    return promptParts.join(', ');
+    // 1. 주어 구성
+    let subject = '';
+    
+    // 나이가 있는 경우의 주어 구성
+    if (data.age && data.nationality && data.gender) {
+        // 나이, 국적, 성별이 모두 있는 경우
+        const article = ['a', 'e', 'i', 'o', 'u'].includes(data.age.toLowerCase()[0]) ? 'An' : 'A';
+        subject = `${article} ${data.age} ${data.nationality} ${data.gender}`;
+    } else if (data.age && data.gender) {
+        // 나이와 성별만 있는 경우
+        const article = ['a', 'e', 'i', 'o', 'u'].includes(data.age.toLowerCase()[0]) ? 'An' : 'A';
+        subject = `${article} ${data.age} ${data.gender}`;
+    } else if (data.nationality && data.gender) {
+        // 국적과 성별만 있는 경우 (기존 로직)
+        const article = ['a', 'e', 'i', 'o', 'u'].includes(data.nationality.toLowerCase()[0]) ? 'An' : 'A';
+        subject = `${article} ${data.nationality} ${data.gender}`;
+    } else if (data.gender) {
+        // 성별만 있는 경우
+        const article = ['a', 'e', 'i', 'o', 'u'].includes(data.gender.toLowerCase()[0]) ? 'An' : 'A';
+        subject = `${article} ${data.gender}`;
+    } else if (data.age) {
+        // 나이만 있는 경우
+        const article = ['a', 'e', 'i', 'o', 'u'].includes(data.age.toLowerCase()[0]) ? 'An' : 'A';
+        subject = `${article} ${data.age} person`;
+    } else {
+        subject = 'A person';
+    }
+    
+    if (data.hairStyle) {
+        subject += ` with ${data.hairStyle}`;
+    }
+    
+    // 2. 의상 추가
+    let clothing = '';
+    if (data.outfit) {
+        // 'wearing'이 이미 포함되어 있는지 확인
+        if (data.outfit.toLowerCase().includes('wearing')) {
+            clothing = `, ${data.outfit}`;
+        } else {
+            clothing = `, wearing ${data.outfit}`;
+        }
+    }
+    
+    // 3. 행동 및 포즈
+    let behavior = '';
+    const behaviorParts = [];
+    
+    if (data.action) {
+        behaviorParts.push(data.action);
+    }
+    
+    if (data.pose) {
+        behaviorParts.push(data.pose);
+    }
+    
+    if (data.expression) {
+        if (behaviorParts.length > 0) {
+            behaviorParts.push(`with ${data.expression}`);
+        } else {
+            behaviorParts.push(data.expression);
+        }
+    }
+    
+    if (behaviorParts.length > 0) {
+        behavior = ', ' + behaviorParts.join(', ');
+    }
+    
+    // 4. 카메라 및 조명
+    let camera = '';
+    const cameraParts = [];
+    
+    if (data.cameraDistance) {
+        cameraParts.push(data.cameraDistance);
+    }
+    
+    if (data.cameraAngle) {
+        if (cameraParts.length > 0) {
+            cameraParts.push(`from ${data.cameraAngle}`);
+        } else {
+            cameraParts.push(data.cameraAngle);
+        }
+    }
+    
+    if (data.lighting) {
+        if (cameraParts.length > 0) {
+            cameraParts.push(`with ${data.lighting}`);
+        } else {
+            cameraParts.push(data.lighting);
+        }
+    }
+    
+    if (cameraParts.length > 0) {
+        camera = '. ' + cameraParts.join(', ');
+    }
+    
+    // 5. 배경
+    let bg = '';
+    if (data.background) {
+        // 배경 설명에 이미 전치사가 포함되어 있는지 확인
+        if (data.background.toLowerCase().includes('background') || 
+            data.background.toLowerCase().includes('in the') ||
+            data.background.toLowerCase().includes('at')) {
+            bg = `. ${data.background}`;
+        } else {
+            bg = `, ${data.background}`;
+        }
+    }
+    
+    // 최종 조합
+    let prompt = subject + clothing + behavior + camera + bg;
+    
+    // 마침표 정리 (중복 마침표 제거)
+    prompt = prompt.replace(/\.\s*\./g, '.').replace(/,\s*\./g, '.');
+    
+    // 첫 글자 대문자로
+    prompt = prompt.charAt(0).toUpperCase() + prompt.slice(1);
+    
+    return prompt;
+}
+
+// 사용 예시 (테스트용)
+function testPromptGeneration() {
+    // 테스트 데이터 설정
+    const testCases = [
+        {
+            name: "Full details",
+            setup: () => {
+                document.querySelector('[data-category="nationality"]').value = 'Korean';
+                document.querySelector('#use-nationality').checked = true;
+                document.querySelector('[data-category="gender"]').value = 'woman';
+                document.querySelector('#use-gender').checked = true;
+                document.querySelector('[data-category="hairstyle"]').value = 'long straight hair';
+                document.querySelector('#use-hairstyle').checked = true;
+                document.querySelector('[data-category="outfit"]').value = 'casual outfit';
+                document.querySelector('#use-outfit').checked = true;
+                document.querySelector('[data-category="action"]').value = 'walking';
+                document.querySelector('#use-action').checked = true;
+                document.querySelector('[data-category="pose"]').value = 'one hand on hip';
+                document.querySelector('#use-pose').checked = true;
+                document.querySelector('[data-category="expression"]').value = 'smiling';
+                document.querySelector('#use-expression').checked = true;
+                document.querySelector('[data-category="camera"]').value = 'eye level';
+                document.querySelector('#use-camera').checked = true;
+                document.querySelector('[data-category="distance"]').value = 'full body';
+                document.querySelector('#use-distance').checked = true;
+                document.querySelector('[data-category="lighting"]').value = 'natural lighting';
+                document.querySelector('#use-lighting').checked = true;
+                document.querySelector('[data-category="background"]').value = 'city street';
+                document.querySelector('#use-background').checked = true;
+            }
+        },
+        {
+            name: "Minimal details",
+            setup: () => {
+                // 모든 체크박스 해제
+                document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                // 최소한의 정보만 설정
+                document.querySelector('[data-category="gender"]').value = 'woman';
+                document.querySelector('#use-gender').checked = true;
+                document.querySelector('[data-category="outfit"]').value = 'red pilot suit inspired by Asuka Langley from Evangelion';
+                document.querySelector('#use-outfit').checked = true;
+            }
+        }
+    ];
+    
+    testCases.forEach(test => {
+        test.setup();
+        console.log(`${test.name}: ${generatePrompt()}`);
+    });
 }
 
 // 프리셋 적용 함수
 function applyPreset(presetId) {
-    // 기본 프리셋들
-    const defaultPresets = {
-        'school-girl': {
-            nationality: 'Korean',
-            gender: 'girl',
-            hairstyle: 'twin tails',
-            outfit: 'school uniform',
-            action: 'standing',
-            pose: 'peace sign with hand',
-            expression: 'smiling',
-            camera: 'eye level',
-            lighting: 'natural lighting'
-        },
-        'business-woman': {
-            nationality: 'Korean',
-            gender: 'woman',
-            hairstyle: 'short bob cut',
-            outfit: 'business suit',
-            action: 'standing',
-            pose: 'hands on hips',
-            expression: 'serious',
-            camera: 'eye level',
-            lighting: 'soft, diffused studio lighting'
-        },
-        'casual-style': {
-            nationality: 'Korean',
-            gender: 'woman',
-            hairstyle: 'long straight hair',
-            outfit: 'casual outfit',
-            action: 'walking',
-            pose: 'one hand on hip',
-            expression: 'smiling',
-            camera: 'eye level',
-            lighting: 'natural lighting'
-        },
-        'anime-character': {
-            nationality: 'Japanese',
-            gender: 'girl',
-            hairstyle: 'twin tails',
-            outfit: 'red pilot suit inspired by Asuka Langley from Evangelion',
-            action: 'standing',
-            pose: 'crossed arms',
-            expression: 'serious',
-            camera: 'low angle',
-            lighting: 'dramatic lighting'
-        }
-    };
+	// applyPreset 함수의 defaultPresets 부분 수정 예시
+	const defaultPresets = {
+		'school-girl': {
+			nationality: 'Korean',
+			gender: 'girl',
+			age: 'teenage',  // 나이 추가
+			hairstyle: 'twin tails',
+			outfit: 'school uniform',
+			action: 'standing',
+			pose: 'peace sign with hand',
+			expression: 'smiling',
+			camera: 'eye level',
+			lighting: 'natural lighting'
+		},
+		'business-woman': {
+			nationality: 'Korean',
+			gender: 'woman',
+			age: '30-year-old',  // 나이 추가
+			hairstyle: 'short bob cut',
+			outfit: 'business suit',
+			action: 'standing',
+			pose: 'hands on hips',
+			expression: 'serious',
+			camera: 'eye level',
+			lighting: 'soft, diffused studio lighting'
+		},
+		'casual-style': {
+			nationality: 'Korean',
+			gender: 'woman',
+			age: '20s',  // 나이 추가
+			hairstyle: 'long straight hair',
+			outfit: 'casual outfit',
+			action: 'walking',
+			pose: 'one hand on hip',
+			expression: 'smiling',
+			camera: 'eye level',
+			lighting: 'natural lighting'
+		},
+		'anime-character': {
+			nationality: 'Japanese',
+			gender: 'girl',
+			age: 'young',  // 나이 추가
+			hairstyle: 'twin tails',
+			outfit: 'red pilot suit inspired by Asuka Langley from Evangelion',
+			action: 'standing',
+			pose: 'crossed arms',
+			expression: 'serious',
+			camera: 'low angle',
+			lighting: 'dramatic lighting'
+		}
+	};
     
     let preset = defaultPresets[presetId];
     
